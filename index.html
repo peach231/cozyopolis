@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cozyopolis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<!-- script order matters: core -> data -> engine -> main (check.js loads in this order too) -->
+<script src="js/core/math.js"></script>
+<script src="js/core/rng.js"></script>
+<script src="js/core/palette.js"></script>
+<script src="js/core/iso.js"></script>
+<script src="js/core/camera.js"></script>
+<script src="js/data/terrain.js"></script>
+<script src="js/data/buildings.js"></script>
+<script src="js/data/eras.js"></script>
+<script src="js/data/names.js"></script>
+<script src="js/engine/grid.js"></script>
+<script src="js/engine/time.js"></script>
+<script src="js/engine/roads.js"></script>
+<script src="js/engine/shapegen.js"></script>
+<script src="js/engine/render.js"></script>
+<script src="js/engine/agents.js"></script>
+<script src="js/engine/traffic.js"></script>
+<script src="js/engine/growth.js"></script>
+<script src="js/engine/events.js"></script>
+<script src="js/engine/audio.js"></script>
+<script src="js/engine/save.js"></script>
+<script src="js/engine/build.js"></script>
+<script src="js/engine/demo.js"></script>
+<script src="js/engine/ui.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
