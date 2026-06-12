@@ -20,10 +20,13 @@ double-click `index.html`. Plan: `~/.claude/plans/build-an-isometric-city-immuta
   virtual-time capture comes back blank once rAF stops. Small scenes can use
   `--virtual-time-budget=4000`.
 - **Hash modes**: `#seed=N` · `#t=HOUR` force clock · `#ff=N` fast-forward logic
-  steps · `#zoom=Z` · `#once` stop after 3 frames · `#debug` fps overlay +
-  autoplay minute logs · `#gallery` building catalog · `#hamlet` `#town` `#grow`
-  demo settlements · `#autoplay=MIN` bot-plays a city (e.g. 135 → metropolis).
+  steps · `#zoom=Z` · `#once` stop after 3 frames · `#rain` pin rainy weather ·
+  `#debug` fps/weather overlay + autoplay minute logs · `#gallery` building
+  catalog · `#hamlet` `#town` `#grow` demo settlements · `#autoplay=MIN`
+  bot-plays a city (e.g. 135 → metropolis).
   Any hash mode skips the title screen and disables autosave.
+  NOTE: rain/grade effects are subtle in downscaled previews — crop screenshots
+  at full resolution before judging them missing.
 
 ## Architecture decisions
 
@@ -76,19 +79,32 @@ double-click `index.html`. Plan: `~/.claude/plans/build-an-isometric-city-immuta
   progress), clock, ticker marquee, minimap (2s rebuild, click-to-jump),
   category palette with era locks, inspector card, toasts.
 
-## Status: ALL 8 PHASES COMPLETE
+## Status: ALL 8 PHASES + PLAYTEST PATCH 1 COMPLETE
 
-Era pacing (autoplay bot, seed 4242): Village 2 · Town 17 · City 21 ·
-Metropolis 121 sim-minutes. check.js: 15/15.
+Era pacing (autoplay bot, seed 4242 after patch): Village 1 · Town 3 · City 71 ·
+Metropolis 144 sim-minutes. check.js: 16/16.
+
+Playtest patch 1 (Eric's feedback): zones split into Res/Com/Farm (player picks
+what grows; com builds ~2x faster, small lots 3.2s, fields 2s) · vehicle
+progression (horse carts on cobble tier 2, motor cars only on paved tier>=3;
+VEH table in traffic.js) · 3D-ier car sprites + horse cart sprite · stuck-vehicle
+watchdog (22s standstill → despawn; box entry refused when exit blocked) ·
+walkers keep to sidewalk edge (offset 0.34 on tier>=2) · demand bars labeled
+R/C with hover tooltips (+ happiness tooltip) · ~11 new buildings (cafe, pond,
+playground, library, cinema, botanic, hospital, promenade, university,
+ferris_wheel, opera) · recipe-driven trees (js/data/trees.js: oak/elm/birch/
+pine/blossom; painter in render.js; legacy saves map leaf→species) · weather
+(js/engine/weather.js: sun/clouds/rain, cloud shadows, rain streaks, dim grade,
+crowd scale, rain patter in audio) · title screen beauty pass (hamlet backdrop,
+gradient wordmark with letter bounce, cottage crest, hover states).
 
 ## Known rough edges (future passes)
 
 - Audio composed blind — needs a human listen (channel peaks in audio.js).
-- Trees/rocks/flowers still use painter art in render.js (looks fine, but not
-  recipe-driven like buildings).
-- Traffic light post bulbs are a simplified two-dot signal.
+- Rocks/flowers still simple painter art (trees are now recipe-driven).
 - No road tunnels/elevation; bridges are flat decks (tier≥3 over water).
 - Headless screenshots of metropolis-scale cities need `&once` (see Workflows).
-- Pedestrians cross with the parallel green but don't have dedicated crosswalk
-  art; cars don't yield to them inside the box (rarely visible at this scale).
-- Title screen is functional but minimal (static buttons over drifting terrain).
+- Pedestrians cross with the parallel green but no crosswalk art.
+- Weather is cosmetic (no sim effects beyond fewer strollers); not saved.
+- Town era arrives fast for the bot (min 3) — human pacing is slower; revisit
+  era thresholds if real play feels rushed.

@@ -26,6 +26,7 @@ function parseHash() {
 // one fixed logic step — all simulation systems tick here
 function logicStep() {
   G.time.tick(LOGIC_DT);
+  G.Weather.tick(LOGIC_DT);
   G.Growth.tick(LOGIC_DT);
   G.Agents.tick(LOGIC_DT);
   G.Traffic.tick(LOGIC_DT);
@@ -68,6 +69,7 @@ function boot() {
   if (G.hash.autoplay) G.Demo.autoplay(+G.hash.autoplay || 60);
   if (G.hash.t !== undefined) G.time.hour = +G.hash.t % 24;
   if (G.hash.ff) for (let i = 0, n = +G.hash.ff; i < n; i++) logicStep();
+  if (G.hash.rain) { G.Weather.kind = 'rain'; G.Weather.t = 0; G.Weather.next = 999; }
 
   // #gallery: render the building catalog on a flat backdrop and stop
   if (G.hash.gallery !== undefined) {
@@ -94,7 +96,11 @@ function boot() {
   }
 
   // ------------------------------------------------------------- title
-  const title = { mode: 'menu', name: '', buttons: [], caret: 0 };
+  const title = { mode: 'menu', name: '', buttons: [], caret: 0, t: 0, hover: null };
+  if (G.scene === 'title') {
+    G.Demo.hamlet(); // a cozy hamlet to gaze at behind the menu
+    G.cam.zoomTarget = G.cam.zoom = 1.25;
+  }
 
   function startNewGame() {
     const name = title.name.trim() || 'Cozyopolis';
@@ -117,48 +123,98 @@ function boot() {
   }
 
   function drawTitle(ctx, dtReal) {
-    // slow drift over the terrain at golden hour
+    // gentle sway over the hamlet at golden hour
+    title.t += dtReal;
     G.time.hour = 17.2;
-    G.cam.x += dtReal * 10;
-    G.cam.clampToMap();
-    if (G.cam.x >= G.grid.size * 28) G.cam.x = -G.grid.size * 20;
+    const [hx, hy] = G.ISO.toScreen(G.grid.size / 2, G.grid.size / 2);
+    G.cam.x = hx + Math.sin(title.t * 0.12) * 90;
+    G.cam.y = hy + 40 + Math.cos(title.t * 0.09) * 30;
     G.Render.drawWorld(ctx);
 
     const view = G.view;
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-    // vignette
-    const grd = ctx.createRadialGradient(view.w / 2, view.h / 2, view.h * 0.3,
+    // vignette + top sky wash for legibility
+    const grd = ctx.createRadialGradient(view.w / 2, view.h / 2, view.h * 0.28,
       view.w / 2, view.h / 2, view.h);
     grd.addColorStop(0, 'rgba(40,32,56,0)');
-    grd.addColorStop(1, 'rgba(40,32,56,0.55)');
+    grd.addColorStop(1, 'rgba(40,32,56,0.6)');
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, view.w, view.h);
+    const sky = ctx.createLinearGradient(0, 0, 0, view.h * 0.45);
+    sky.addColorStop(0, 'rgba(46,36,64,0.55)');
+    sky.addColorStop(1, 'rgba(46,36,64,0)');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, view.w, view.h * 0.45);
 
-    const cx = view.w / 2;
+    const cx = view.w / 2, ty = view.h * 0.27;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    // warm halo behind the wordmark
+    const halo = ctx.createRadialGradient(cx, ty, 10, cx, ty, 280);
+    halo.addColorStop(0, 'rgba(255,207,107,0.32)');
+    halo.addColorStop(1, 'rgba(255,207,107,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(cx - 300, ty - 130, 600, 240);
+    // tiny cottage crest above the wordmark
+    {
+      const cyT = ty - 66;
+      ctx.fillStyle = '#f0e2c4';
+      ctx.fillRect(cx - 11, cyT - 2, 22, 13);
+      ctx.fillStyle = '#c75b4e';
+      ctx.beginPath();
+      ctx.moveTo(cx - 15, cyT - 2); ctx.lineTo(cx, cyT - 15); ctx.lineTo(cx + 15, cyT - 2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#a8784f';
+      ctx.fillRect(cx - 2.6, cyT + 4, 5.2, 7);
+      ctx.fillStyle = '#ffd98a';
+      ctx.fillRect(cx + 4.5, cyT + 1.5, 4, 4);
+      ctx.fillStyle = '#b8946a';
+      ctx.fillRect(cx + 5.5, cyT - 12, 3.4, 6);
+    }
+    // wordmark: per-letter bounce, deep shadow, warm gradient fill
+    const word = 'Cozyopolis';
     ctx.font = "700 64px 'Trebuchet MS', 'Segoe UI', sans-serif";
-    ctx.fillStyle = 'rgba(42,33,56,0.85)';
-    ctx.fillText('Cozyopolis', cx + 3, view.h * 0.3 + 3);
-    ctx.fillStyle = '#ffcf6b';
-    ctx.fillText('Cozyopolis', cx, view.h * 0.3);
+    const widths = [...word].map((ch) => ctx.measureText(ch).width);
+    const total = widths.reduce((a, b) => a + b, 0);
+    const fillGrad = ctx.createLinearGradient(0, ty - 32, 0, ty + 32);
+    fillGrad.addColorStop(0, '#ffe8a8');
+    fillGrad.addColorStop(0.55, '#ffcf6b');
+    fillGrad.addColorStop(1, '#f2a35c');
+    let lx = cx - total / 2;
+    [...word].forEach((ch, i) => {
+      const bounce = Math.sin(title.t * 1.6 + i * 0.7) * 2.5;
+      const chx = lx + widths[i] / 2;
+      ctx.fillStyle = 'rgba(42,33,56,0.9)';
+      ctx.fillText(ch, chx + 3, ty + bounce + 4);
+      ctx.fillStyle = fillGrad;
+      ctx.fillText(ch, chx, ty + bounce);
+      ctx.strokeStyle = 'rgba(255,243,214,0.5)';
+      ctx.lineWidth = 1;
+      ctx.strokeText(ch, chx, ty + bounce - 1);
+      lx += widths[i];
+    });
     ctx.font = "600 17px 'Trebuchet MS', sans-serif";
     ctx.fillStyle = '#f6eedd';
-    ctx.fillText('grow a tiny hamlet into a glittering metropolis', cx, view.h * 0.3 + 52);
+    ctx.fillText('grow a tiny hamlet into a glittering metropolis', cx, ty + 54);
 
     title.buttons = [];
     const btn = (label, y, id, primary) => {
       const w = 280, h = 52, x = cx - w / 2;
       title.buttons.push({ id, x, y, w, h });
-      G.Render.roundRect(ctx, x, y, w, h, 14);
-      ctx.fillStyle = primary ? '#ffcf6b' : 'rgba(58,49,71,0.92)';
+      const hov = title.hover === id;
+      const lift = hov ? -2 : 0;
+      ctx.fillStyle = 'rgba(30,24,44,0.45)';
+      G.Render.roundRect(ctx, x + 2, y + 4, w, h, 14);
       ctx.fill();
-      ctx.strokeStyle = primary ? '#fff3d6' : '#564a68';
+      G.Render.roundRect(ctx, x, y + lift, w, h, 14);
+      ctx.fillStyle = primary ? (hov ? '#ffdf8e' : '#ffcf6b') : (hov ? '#564a68' : 'rgba(58,49,71,0.92)');
+      ctx.fill();
+      ctx.strokeStyle = primary ? '#fff3d6' : '#6b5e82';
       ctx.lineWidth = 1.6;
       ctx.stroke();
       ctx.font = "700 19px 'Trebuchet MS', sans-serif";
       ctx.fillStyle = primary ? '#3a3147' : '#f6eedd';
-      ctx.fillText(label, cx, y + h / 2 + 1);
+      ctx.fillText(label, cx, y + lift + h / 2 + 1);
     };
 
     if (title.mode === 'menu') {
@@ -186,6 +242,9 @@ function boot() {
       ctx.fillText('press Enter to found your city', cx, y + h + 26);
       btn('Found the City', y + h + 50, 'found', true);
     }
+    ctx.font = "600 12px 'Trebuchet MS', sans-serif";
+    ctx.fillStyle = 'rgba(185,174,201,0.8)';
+    ctx.fillText('a tiny city story · made with canvas & care', cx, view.h - 22);
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
   }
@@ -266,6 +325,15 @@ function boot() {
   window.addEventListener('mousemove', (e) => {
     const m = input.mouse;
     m.x = e.clientX; m.y = e.clientY;
+    if (G.scene === 'title') {
+      title.hover = null;
+      for (const b of title.buttons) {
+        if (e.clientX >= b.x && e.clientX <= b.x + b.w &&
+            e.clientY >= b.y && e.clientY <= b.y + b.h) title.hover = b.id;
+      }
+      cv.style.cursor = title.hover ? 'pointer' : 'default';
+      return;
+    }
     if (G.scene !== 'game') return;
     if (m.panning) {
       G.cam.x -= (e.clientX - m.lastX) / G.cam.zoom;

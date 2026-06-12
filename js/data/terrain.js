@@ -43,16 +43,16 @@ function carveRiver(grid, rng) {
 function scatterNature(grid, rng, seed) {
   const n = grid.size;
   const cx = n / 2, cy = n / 2;
-  // tree clusters
+  // tree clusters — each grove leans toward one species with strays mixed in
   const clusters = rng.int(26, 36);
   for (let c = 0; c < clusters; c++) {
     const kx = rng.int(4, n - 4), ky = rng.int(4, n - 4);
-    const leaf = rng.pick(['leafWarm', 'leafWarm', 'leafCool', 'leafGold']);
+    const sp = G.TreeArt.pick(rng);
     const count = rng.int(6, 18), spread = rng.range(2.5, 6);
     for (let i = 0; i < count; i++) {
       const a = rng.range(0, Math.PI * 2), r = Math.abs(rng() + rng() - 1) * spread;
       const x = Math.round(kx + Math.cos(a) * r * 2), y = Math.round(ky + Math.sin(a) * r);
-      plantTree(grid, rng, x, y, leaf, cx, cy);
+      plantTree(grid, rng, x, y, rng.chance(0.8) ? sp : G.TreeArt.pick(rng), cx, cy);
     }
   }
   // lone trees + rocks + flowers
@@ -62,7 +62,7 @@ function scatterNature(grid, rng, seed) {
       if (grid.occ[grid.idx(x, y)] !== 0) continue;
       const h = M.hash2(x, y, seed ^ 0xBEEF);
       if (T.isBuildable(g)) {
-        if (h < 0.006) plantTree(grid, rng, x, y, h < 0.002 ? 'leafCool' : 'leafWarm', cx, cy);
+        if (h < 0.006) plantTree(grid, rng, x, y, G.TreeArt.pick(rng), cx, cy);
         else if (h > 0.9985) grid.addStructure({ kind: 'rock', v: (h * 997 | 0) % 3, x, y });
         else if (g === T.MEADOW && h > 0.986) {
           grid.addStructure({ kind: 'flowers', v: (h * 991 | 0) % 2, x, y });
@@ -72,14 +72,14 @@ function scatterNature(grid, rng, seed) {
   }
 }
 
-function plantTree(grid, rng, x, y, leaf, cx, cy) {
+function plantTree(grid, rng, x, y, sp, cx, cy) {
   if (!grid.inBounds(x, y)) return;
   const i = grid.idx(x, y);
   if (grid.occ[i] !== 0 || !G.T.isBuildable(grid.ground[i])) return;
   // keep the starting area near map center airy so the first hamlet has room
   const d2 = G.M.dist2(x, y, cx, cy);
   if (d2 < 14 * 14 && rng.chance(0.75)) return;
-  grid.addStructure({ kind: 'tree', leaf, v: rng.int(0, 3), x, y });
+  grid.addStructure({ kind: 'tree', sp, v: rng.int(0, 4), x, y });
 }
 
 // Fill ground + deco on an initialized empty grid. Deterministic per seed.

@@ -27,6 +27,7 @@ grid.init = (size, seed) => {
   G.Agents?.reset?.();
   G.Traffic?.reset?.();
   G.Growth?.reseed?.(seed);
+  G.Weather?.reset?.();
 };
 
 grid.idx = (x, y) => y * grid.size + x;

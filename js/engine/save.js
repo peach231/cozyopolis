@@ -33,7 +33,7 @@ S.capture = () => ({
   zones: b64(G.grid.zones),
   structures: [...G.grid.structures.values()].map((s) => ({
     kind: s.kind, type: s.type, x: s.x, y: s.y, w: s.w, h: s.h,
-    pop: s.pop, construction: s.construction, leaf: s.leaf, v: s.v,
+    pop: s.pop, construction: s.construction, sp: s.sp, leaf: s.leaf, v: s.v,
   })),
   camX: G.cam.x, camY: G.cam.y, zoomIndex: G.cam.zoomIndex,
 });

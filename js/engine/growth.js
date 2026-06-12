@@ -125,9 +125,11 @@ function growOn(zone, pool) {
   const x = best % G.grid.size, y = (best / G.grid.size) | 0;
   const type = pool[rng.int(0, pool.length)];
   const def = G.Buildings.byId[type];
+  // small lots raise quickly; flat fields are planted almost overnight
+  const buildT = def.flat ? 2 : def.cost <= 300 ? 3.2 : CONSTRUCT_T;
   const s = G.grid.addStructure({
     kind: 'building', type, x, y, w: def.fw, h: def.fd,
-    construction: CONSTRUCT_T, pop: 0,
+    construction: buildT, pop: 0,
   });
   if (s) G.hooks?.grown?.(s);
   return !!s;
@@ -233,8 +235,11 @@ Growth.tick = (dt) => {
   if (Growth.demand.res > 0 && rng() < 0.25 + Growth.demand.res * 0.75) {
     growOn(1, pools.res);
   }
-  if (Growth.demand.com > 0 && rng() < 0.2 + Growth.demand.com * 0.7) {
-    growOn(2, pools.com);
+  // commercial and farmland each get their own roll — shops fill in briskly,
+  // and the player chooses the mix by what they zone
+  if (Growth.demand.com > 0) {
+    if (rng() < 0.45 + Growth.demand.com * 0.55) growOn(2, pools.com);
+    if (rng() < 0.45 + Growth.demand.com * 0.55) growOn(3, pools.farm);
   }
   if (rng() < 0.12) tryLevelUp();
   popFlow(rng);

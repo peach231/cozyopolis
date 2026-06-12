@@ -193,6 +193,54 @@ add({
   ],
 });
 
+add({
+  id: 'cafe', name: 'Cafe', era: 'village', fw: 1, fd: 1, height: 54,
+  inset: 0.1, cost: 250, jobs: 5, kind: 'com',
+  ops: [
+    ['box', 0.1, 0.1, 0.8, 0.8, 0, 24, 'plaster'],
+    ['gable', 0.03, 0.03, 0.94, 0.94, 24, 11, 'roofTeal', 'x', 'plaster'],
+    ['awning', 'sw', 0.1, 0.9, 15, 3, 7, 'roofTeal', 'plaster'],
+    ['door', 'sw', 0.7, 0, { h: 12 }],
+    ['win', 'sw', 1, 3, { us: [0.28], w: 9, h: 8 }],
+    ['win', 'se', 1, 13, { us: [0.5], w: 6, h: 6 }],
+    ['paint', (ctx, proj) => { // sidewalk tables
+      for (const [tx, ty] of [[0.3, 1.06], [0.72, 1.12]]) {
+        const [sx, sy] = proj(tx, ty, 0);
+        ctx.fillStyle = '#7d5a3e';
+        ctx.fillRect(sx - 0.8, sy - 4, 1.6, 4);
+        ctx.fillStyle = '#f0e2c4';
+        ctx.beginPath(); ctx.ellipse(sx, sy - 4.5, 3.2, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    }],
+  ],
+});
+
+add({
+  id: 'pond', name: 'Duck Pond', era: 'village', fw: 2, fd: 2, height: 26,
+  emissive: false, cost: 220, aura: 8, upkeep: 1, kind: 'park', flat: true,
+  ops: [
+    ['floor', 0.05, 0.05, 1.9, 1.9, 'meadow', 1],
+    ['paint', (ctx, proj) => {
+      const [sx, sy] = proj(1, 1, 0);
+      ctx.fillStyle = '#5fb7bd';
+      ctx.beginPath(); ctx.ellipse(sx, sy, 26, 13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8fd4d0';
+      ctx.beginPath(); ctx.ellipse(sx - 4, sy - 2, 16, 8, 0, 0, Math.PI * 2); ctx.fill();
+      // reeds + ducks
+      ctx.strokeStyle = '#5c9148';
+      ctx.lineWidth = 1.2;
+      for (const [rx, ry] of [[-22, 4], [-18, 8], [20, -4], [24, 0]]) {
+        ctx.beginPath(); ctx.moveTo(sx + rx, sy + ry); ctx.lineTo(sx + rx + 1, sy + ry - 7); ctx.stroke();
+      }
+      for (const [dxp, dyp] of [[-6, 1], [5, -3]]) {
+        ctx.fillStyle = '#f0e2c4';
+        ctx.beginPath(); ctx.ellipse(sx + dxp, sy + dyp, 2.2, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + dxp + 1.8, sy + dyp - 1.4, 1, 0, Math.PI * 2); ctx.fill();
+      }
+    }],
+  ],
+});
+
 // ------------------------------------------------------------- TOWN era
 const townhouse = (id, name, wall, roof) => add({
   id, name, era: 'town', fw: 1, fd: 1, height: 76, inset: 0.08,
@@ -291,6 +339,48 @@ add({
   ],
 });
 
+add({
+  id: 'playground', name: 'Playground', era: 'town', fw: 1, fd: 1, height: 26,
+  emissive: false, cost: 180, aura: 6, upkeep: 1, kind: 'park', flat: true,
+  ops: [
+    ['floor', 0.05, 0.05, 0.9, 0.9, 'sand', 1],
+    ['paint', (ctx, proj) => {
+      // slide
+      const [ax, ay] = proj(0.3, 0.35, 0);
+      ctx.strokeStyle = '#c75b4e';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(ax, ay - 12); ctx.lineTo(ax + 9, ay - 1); ctx.stroke();
+      ctx.strokeStyle = '#7d5a3e';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(ax, ay - 12); ctx.lineTo(ax, ay); ctx.stroke();
+      // swing frame
+      const [bx, by] = proj(0.68, 0.7, 0);
+      ctx.strokeStyle = '#4e8f86';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(bx - 8, by); ctx.lineTo(bx - 4, by - 12); ctx.lineTo(bx + 6, by - 12); ctx.lineTo(bx + 10, by);
+      ctx.stroke();
+      ctx.strokeStyle = '#3a3147'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(bx, by - 12); ctx.lineTo(bx, by - 4); ctx.stroke();
+      ctx.fillStyle = '#ffcf6b';
+      ctx.fillRect(bx - 2, by - 4, 4, 1.6);
+    }],
+  ],
+});
+
+add({
+  id: 'library', name: 'Library', era: 'town', fw: 1, fd: 1, height: 64,
+  inset: 0.08, cost: 450, aura: 7, upkeep: 4, kind: 'civic',
+  ops: [
+    ['box', 0.08, 0.08, 0.84, 0.84, 0, 30, 'brick'],
+    ['box', 0.03, 0.03, 0.94, 0.94, 30, 4, 'stone'],
+    ['gable', 0.1, 0.1, 0.8, 0.8, 34, 9, 'roofSlate', 'y', 'stone'],
+    ['door', 'sw', 0.5, 0, { h: 13, w: 8 }],
+    ['win', 'sw', 2, 14, { us: [0.2, 0.8], w: 6, h: 10 }],
+    ['win', 'se', 2, 12, { us: [0.3, 0.7], w: 6, h: 10 }],
+  ],
+});
+
 // ------------------------------------------------------------- CITY era
 const apartment = (id, name, wall, accent) => add({
   id, name, era: 'city', fw: 1, fd: 1, height: 102, inset: 0.06,
@@ -374,6 +464,108 @@ add({
     }],
     ['door', 'se', 0.5, 0, { h: 14, w: 9 }],
     ['winGrid', 'se', 3, 1, 16, 0, { w: 6, h: 9 }],
+  ],
+});
+
+add({
+  id: 'cinema', name: 'Cinema', era: 'city', fw: 1, fd: 1, height: 74,
+  inset: 0.07, cost: 700, jobs: 14, kind: 'com',
+  ops: [
+    ['box', 0.07, 0.07, 0.86, 0.86, 0, 42, 'plaster'],
+    ['box', 0.02, 0.02, 0.96, 0.96, 42, 5, 'roofRed'],
+    ['door', 'sw', 0.5, 0, { h: 13, w: 10, m: 'roofRed' }],
+    ['paint', (ctx, proj, b) => {
+      // marquee with bulbs above the entrance
+      const [sx, sy] = proj(0.5, 0.93, 22);
+      ctx.fillStyle = '#c75b4e';
+      G.Render.roundRect(ctx, sx - 12, sy - 7, 24, 10, 3);
+      ctx.fill();
+      ctx.fillStyle = '#fff3d6';
+      G.Render.roundRect(ctx, sx - 10, sy - 5, 20, 6, 2);
+      ctx.fill();
+      ctx.fillStyle = '#3a3147';
+      ctx.font = '700 5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CINEMA', sx, sy - 0.6);
+      if (b.ectx) {
+        for (let i = 0; i < 6; i++) {
+          b.ectx.fillStyle = '#ffd98a';
+          b.ectx.beginPath();
+          b.ectx.arc(sx - 10 + i * 4, sy - 9, 1, 0, Math.PI * 2);
+          b.ectx.fill();
+        }
+      }
+    }],
+    ['winGrid', 'se', 2, 2, 12, 14, { w: 6, h: 7 }],
+  ],
+});
+
+add({
+  id: 'botanic', name: 'Botanic Garden', era: 'city', fw: 2, fd: 2, height: 56,
+  cost: 900, aura: 13, upkeep: 6, kind: 'park',
+  ops: [
+    ['floor', 0.05, 0.05, 1.9, 1.9, 'meadow', 1],
+    ['paint', (ctx, proj) => { // flower beds
+      const rng = G.rng(517);
+      for (let i = 0; i < 14; i++) {
+        const [sx, sy] = proj(0.15 + rng() * 1.7, 0.15 + rng() * 1.7, 0);
+        ctx.fillStyle = rng() < 0.5 ? '#e8909d' : '#ecc35e';
+        ctx.beginPath(); ctx.arc(sx, sy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }],
+    ['box', 0.55, 0.55, 0.9, 0.9, 0, 14, 'roofTeal'],   // glasshouse base
+    ['gable', 0.5, 0.5, 1, 1, 14, 10, 'roofTeal', 'x', 'roofTeal'],
+    ['win', 'sw', 3, 2, { us: [0.35, 0.5, 0.65], w: 6, h: 9, inset: 0.55 }],
+  ],
+});
+
+add({
+  id: 'ferris_wheel', name: 'Ferris Wheel', era: 'city', fw: 2, fd: 2, height: 110,
+  cost: 3000, aura: 16, upkeep: 10, kind: 'landmark', unique: true,
+  ops: [
+    ['floor', 0.1, 0.1, 1.8, 1.8, 'meadow', 1],
+    ['paint', (ctx, proj, b) => {
+      const [sx, sy] = proj(1, 1, 0);
+      const cy = sy - 52, R = 36;
+      // A-frame supports
+      ctx.strokeStyle = '#6f6a85';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx - 14, sy); ctx.lineTo(sx, cy); ctx.lineTo(sx + 14, sy);
+      ctx.stroke();
+      // wheel + spokes
+      ctx.strokeStyle = '#c75b4e';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(sx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(sx, cy);
+        ctx.lineTo(sx + Math.cos(a) * R, cy + Math.sin(a) * R);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#3a3147';
+      ctx.beginPath(); ctx.arc(sx, cy, 3, 0, Math.PI * 2); ctx.fill();
+      // gondolas
+      const cols = ['#ffcf6b', '#9ed47a', '#88a4c4', '#e8909d'];
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + 0.39;
+        const gx = sx + Math.cos(a) * R, gy = cy + Math.sin(a) * R + 3;
+        ctx.fillStyle = cols[i % 4];
+        G.Render.roundRect(ctx, gx - 2.6, gy - 2, 5.2, 4.6, 1.6);
+        ctx.fill();
+        if (b.ectx) {
+          b.ectx.fillStyle = '#ffd98a';
+          b.ectx.beginPath(); b.ectx.arc(gx, gy, 2.2, 0, Math.PI * 2); b.ectx.fill();
+        }
+      }
+      if (b.ectx) { // rim lights at night
+        b.ectx.strokeStyle = 'rgba(255,217,138,0.8)';
+        b.ectx.lineWidth = 1.6;
+        b.ectx.beginPath(); b.ectx.arc(sx, cy, R, 0, Math.PI * 2); b.ectx.stroke();
+      }
+    }],
   ],
 });
 
@@ -469,6 +661,103 @@ add({
     ['door', 'sw', 0.5, 0, { h: 18, w: 10 }],
     ['winGrid', 'sw', 3, 1, 18, 0, { w: 5, h: 14 }],
     ['winGrid', 'se', 2, 1, 14, 0, { w: 5, h: 12 }],
+  ],
+});
+
+add({
+  id: 'hospital', name: 'Hospital', era: 'city', fw: 2, fd: 2, height: 96,
+  inset: 0.08, cost: 1200, aura: 9, upkeep: 12, kind: 'civic',
+  ops: [
+    ['box', 0.08, 0.08, 1.84, 1.84, 0, 52, 'plaster'],
+    ['box', 0.03, 0.03, 1.94, 1.94, 52, 5, 'stone'],
+    ['box', 0.65, 0.65, 0.7, 0.7, 57, 12, 'plaster'],
+    ['door', 'sw', 0.5, 0, { h: 14, w: 11, m: 'woodDark' }],
+    ['winGrid', 'sw', 4, 3, 14, 13, { w: 6, h: 7 }],
+    ['winGrid', 'se', 4, 3, 14, 13, { w: 6, h: 7 }],
+    ['paint', (ctx, proj, b) => { // red cross sign
+      const [sx, sy] = proj(1, 1.96, 40);
+      ctx.fillStyle = '#fff3d6';
+      G.Render.roundRect(ctx, sx - 5, sy - 5, 10, 10, 2);
+      ctx.fill();
+      ctx.fillStyle = '#e8655a';
+      ctx.fillRect(sx - 1.4, sy - 3.6, 2.8, 7.2);
+      ctx.fillRect(sx - 3.6, sy - 1.4, 7.2, 2.8);
+      if (b.ectx) {
+        b.ectx.fillStyle = 'rgba(232,101,90,0.9)';
+        b.ectx.fillRect(sx - 1.4, sy - 3.6, 2.8, 7.2);
+        b.ectx.fillRect(sx - 3.6, sy - 1.4, 7.2, 2.8);
+      }
+    }],
+  ],
+});
+
+add({
+  id: 'promenade', name: 'Promenade', era: 'metropolis', fw: 1, fd: 1, height: 30,
+  emissive: false, cost: 200, aura: 8, upkeep: 1, kind: 'park', flat: true,
+  ops: [
+    ['floor', 0.03, 0.03, 0.94, 0.94, 'stone', 1],
+    ['paint', (ctx, proj) => {
+      // twin street trees + bench
+      for (const [tx, ty] of [[0.28, 0.28], [0.72, 0.72]]) {
+        const [sx, sy] = proj(tx, ty, 0);
+        ctx.fillStyle = '#7d5a3e';
+        ctx.fillRect(sx - 1.4, sy - 10, 2.8, 10);
+        ctx.fillStyle = '#5d9460';
+        ctx.beginPath(); ctx.ellipse(sx, sy - 14, 7, 5.6, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#79a84f';
+        ctx.beginPath(); ctx.ellipse(sx - 2, sy - 16, 4, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      const [bx, by] = proj(0.72, 0.3, 0);
+      ctx.fillStyle = '#a8784f';
+      ctx.fillRect(bx - 5, by - 4, 10, 2.4);
+      ctx.fillRect(bx - 5, by - 1.4, 1.8, 2.6);
+      ctx.fillRect(bx + 3.2, by - 1.4, 1.8, 2.6);
+    }],
+  ],
+});
+
+add({
+  id: 'university', name: 'University Hall', era: 'metropolis', fw: 2, fd: 2,
+  height: 110, inset: 0.08, cost: 2600, aura: 15, upkeep: 16, kind: 'civic',
+  ops: [
+    ['box', 0.08, 0.08, 1.84, 1.84, 0, 44, 'brick'],
+    ['gable', 0.03, 0.03, 1.94, 1.94, 44, 18, 'roofSlate', 'x', 'brick'],
+    ['box', 0.7, 0.7, 0.6, 0.6, 62, 16, 'plaster'],     // clock cupola
+    ['pyramid', 0.64, 0.64, 0.72, 0.72, 78, 14, 'roofTeal'],
+    ['paint', (ctx, proj) => {
+      const [sx, sy] = proj(1.31, 1.31, 70);
+      ctx.fillStyle = '#fff3d6';
+      ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#3a3147'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy - 2.8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + 2, sy + 1); ctx.stroke();
+    }],
+    ['door', 'sw', 0.5, 0, { h: 16, w: 10 }],
+    ['winGrid', 'sw', 4, 2, 12, 16, { w: 6, h: 9 }],
+    ['winGrid', 'se', 4, 2, 12, 16, { w: 6, h: 9 }],
+  ],
+});
+
+add({
+  id: 'opera', name: 'Opera House', era: 'metropolis', fw: 2, fd: 2, height: 96,
+  inset: 0.08, cost: 5500, aura: 18, upkeep: 18, kind: 'landmark', unique: true,
+  ops: [
+    ['box', 0.08, 0.08, 1.84, 1.84, 0, 34, 'stone'],
+    ['cyl', 1, 1, 0.62, 34, 22, 'roofTeal'],            // domed hall
+    ['box', 0.2, 1.5, 1.6, 0.42, 0, 44, 'plaster'],     // grand facade
+    ['gable', 0.14, 1.46, 1.72, 0.5, 44, 10, 'stone', 'x', 'plaster'],
+    ['paint', (ctx, proj) => { // facade columns
+      for (let i = 0; i < 5; i++) {
+        const [sx, sy] = proj(0.36 + i * 0.32, 1.94, 0);
+        ctx.fillStyle = '#f6edd5';
+        ctx.fillRect(sx - 1.4, sy - 32, 2.8, 32);
+        ctx.fillStyle = '#b9aec9';
+        ctx.fillRect(sx + 0.7, sy - 32, 0.8, 32);
+      }
+    }],
+    ['door', 'sw', 0.5, 0, { h: 15, w: 10 }],
+    ['win', 'sw', 2, 18, { us: [0.16, 0.84], w: 6, h: 9 }],
+    ['winGrid', 'se', 3, 1, 14, 0, { w: 6, h: 9 }],
   ],
 });
 

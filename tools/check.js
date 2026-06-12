@@ -226,6 +226,12 @@ check('agents+traffic: town sim — paths legal, lights cycle, cars obey roads',
   assert(maxCars >= 3, `cars never appeared (max ${maxCars})`);
   assert(maxWalkers >= 5, `walkers never appeared (max ${maxWalkers})`);
   assert(sawWait, 'no car ever waited at a light/stop');
+  // vehicle progression: motor cars never touch sub-paved tiles
+  for (const car of G.Traffic.cars) {
+    if (car.veh !== 'car') continue;
+    assert(G.Roads.at(Math.round(car.x), Math.round(car.y)) >= 3,
+      'motor car on a sub-paved road');
+  }
 
   // light state machine cycles
   const L = [...G.Traffic.lights.values()][0];
@@ -236,6 +242,36 @@ check('agents+traffic: town sim — paths legal, lights cycle, cars obey roads',
     if (L.axis !== ax0) flipped = true;
   }
   assert(flipped, 'light never changed axis');
+});
+
+check('vehicle progression: cobble-only network gets carts, never cars', () => {
+  G.grid.init(96, 31);
+  G.city = { name: 't', pop: 0, funds: 1e9, eraIndex: 1, happiness: 0.6 };
+  // small cobble loop with two buildings
+  const c = 48;
+  let placed = 0;
+  for (const [x0, y0, x1, y1] of [[c - 4, c, c + 4, c], [c - 4, c + 4, c + 4, c + 4],
+    [c - 4, c, c - 4, c + 4], [c + 4, c, c + 4, c + 4]]) {
+    for (const [x, y] of G.Roads.lineTiles(x0, y0, x1, y1)) {
+      if (G.Roads.place(x, y, 2) >= 0) placed++;
+    }
+  }
+  assert(placed > 10, 'cobble loop not built');
+  for (const [bx, by] of [[c - 3, c - 1], [c + 3, c + 5]]) {
+    const s = G.grid.structAt(bx, by);
+    if (s) G.grid.removeStructure(s.id);
+    G.grid.addStructure({ kind: 'building', type: 'cottage_a', x: bx, y: by, w: 1, h: 1 });
+  }
+  G.time.hour = 12;
+  let sawCart = false;
+  for (let i = 0; i < 60 * 60; i++) {
+    G.Traffic.tick(1 / 60);
+    for (const v of G.Traffic.cars) {
+      assert(v.veh !== 'car', 'motor car spawned on cobble-only network');
+      if (v.veh === 'cart') sawCart = true;
+    }
+  }
+  assert(sawCart, 'no cart ever appeared on the cobble network');
 });
 
 // ---------------------------------------------------------------- buildings

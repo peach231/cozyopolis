@@ -124,7 +124,7 @@ Build.tryPlantTree = (x, y) => {
   if (!Build.canZone(x, y)) return false; // same ground rules
   if (!spend(10)) { G.UI.toast?.('Not enough funds'); return false; }
   const rng = G.rng(x * 977 + y * 131 + G.grid.seed);
-  G.grid.addStructure({ kind: 'tree', leaf: rng.pick(['leafWarm', 'leafCool', 'leafGold']), v: rng.int(0, 3), x, y });
+  G.grid.addStructure({ kind: 'tree', sp: G.TreeArt.pick(rng), v: rng.int(0, 4), x, y });
   addFloat(x, y, '-10', '#ffd98a');
   return true;
 };
@@ -211,7 +211,7 @@ Build.drawOverlay = (ctx, dt) => {
       const tiles = Build.drag
         ? Build.rectTiles(Build.drag.x0, Build.drag.y0, hx, hy)
         : [[hx, hy]];
-      const col = t.zone === 1 ? '#9ed47a' : '#88a4c4';
+      const col = ['', '#9ed47a', '#88a4c4', '#d9b153'][t.zone];
       for (const [x, y] of tiles) {
         G.Render.drawTileCursor(ctx, x, y, Build.canZone(x, y) ? col : '#e58a7a');
       }

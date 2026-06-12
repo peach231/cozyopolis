@@ -48,30 +48,91 @@ const blob = (ctx, x, y, rx, ry, color) => {
   ctx.fill();
 };
 
-// storybook tree: layered cloud canopy, light from upper-left
-function paintTree(ctx, leaf, v) {
-  const P = G.C.PAL[leaf] || G.C.PAL.leafWarm;
-  const wood = G.C.PAL.woodDark;
-  const rng = G.rng(0xA11CE + v * 977);
-  const cx = 24, base = 56;
-  const W = 15 + rng.int(0, 6), H = 13 + rng.int(0, 5), top = base - 22 - rng.int(0, 6);
-  // trunk
+// recipe-driven tree painter: interprets G.TreeArt species entries
+function paintTree(ctx, sp, v) {
+  const art = G.TreeArt[sp] ?? G.TreeArt.oak;
+  const P = G.C.PAL[art.leaf];
+  const wood = G.C.PAL[art.trunk];
+  const rng = G.rng(0xA11CE + v * 977 + G.seedFrom(sp));
+  const cx = 24, base = 64;
+  const W = rng.range(art.w[0], art.w[1]);
+  const H = rng.range(art.h[0], art.h[1]);
+  const tH = rng.range(art.trunkH[0], art.trunkH[1]);
+  const lean = rng.range(-1.4, 1.4);
+
+  // trunk with lit edge (and birch bark notches)
   ctx.fillStyle = wood[3];
-  rr(ctx, cx - 2.5, base - 16, 5, 16, 2.2);
+  ctx.beginPath();
+  ctx.moveTo(cx - art.trunkW / 2, base);
+  ctx.quadraticCurveTo(cx - art.trunkW / 2 + lean * 0.4, base - tH * 0.6,
+    cx - art.trunkW / 3 + lean, base - tH);
+  ctx.lineTo(cx + art.trunkW / 3 + lean, base - tH);
+  ctx.quadraticCurveTo(cx + art.trunkW / 2 + lean * 0.4, base - tH * 0.6,
+    cx + art.trunkW / 2, base);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = wood[2];
-  rr(ctx, cx - 2.5, base - 16, 2.6, 16, 2.2);
-  ctx.fill();
-  // canopy silhouette (dark base), then mid, then highlight upper-left
-  blob(ctx, cx + 1, top + 2, W, H, P[4]);
-  blob(ctx, cx + 5, top + 5, W * 0.72, H * 0.72, P[4]);
-  blob(ctx, cx, top, W * 0.92, H * 0.92, P[3]);
-  blob(ctx, cx - 3, top - 2, W * 0.7, H * 0.7, P[2]);
-  blob(ctx, cx - 5, top - 4, W * 0.46, H * 0.46, P[1]);
-  // specular leaves
-  ctx.fillStyle = P[0];
-  for (let i = 0; i < 4; i++) {
-    blob(ctx, cx - 8 + rng.int(0, 8), top - 7 + rng.int(0, 6), 1.6, 1.2, P[0]);
+  ctx.fillStyle = wood[1];
+  ctx.fillRect(cx - art.trunkW / 2 + 0.6, base - tH + 1, art.trunkW * 0.32, tH - 2);
+  if (art.bark) {
+    ctx.fillStyle = wood[4];
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(cx - 1.4 + rng.range(-1, 1), base - 3 - i * (tH / 4.5), 2.4, 1.1);
+    }
+  }
+
+  const top = base - tH - H * 0.55;
+  if (art.shape === 'cone') {
+    // stacked frond tiers, each with a lit left edge
+    const tiers = art.tiers ?? 3;
+    for (let t = tiers - 1; t >= 0; t--) {
+      const ty = base - tH - (H / tiers) * t * 0.92;
+      const tw = W * (0.45 + 0.55 * (t + 1) / tiers);
+      const th = H / tiers * 1.5;
+      ctx.fillStyle = P[3];
+      ctx.beginPath();
+      ctx.moveTo(cx + lean * (t / tiers), ty - th);
+      ctx.lineTo(cx + tw, ty);
+      ctx.lineTo(cx - tw, ty);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = P[1];
+      ctx.beginPath();
+      ctx.moveTo(cx + lean * (t / tiers), ty - th);
+      ctx.lineTo(cx - tw, ty);
+      ctx.lineTo(cx - tw * 0.25, ty);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = G.C.withAlpha(P[4], 0.4);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - W, base - tH);
+    ctx.lineTo(cx + lean, base - tH - H * 1.34);
+    ctx.stroke();
+  } else {
+    // round canopy: silhouette, mid mass, upper-left light, leaf specks
+    ctx.strokeStyle = G.C.withAlpha(P[4], 0.55);
+    ctx.lineWidth = 1.4;
+    blob(ctx, cx + lean, top + 1.5, W + 0.8, H + 0.8, G.C.withAlpha(P[4], 0.5));
+    blob(ctx, cx + lean + 1, top + 1, W, H, P[4]);
+    blob(ctx, cx + lean + W * 0.3, top + H * 0.35, W * 0.6, H * 0.6, P[4]);
+    blob(ctx, cx + lean, top, W * 0.94, H * 0.94, P[3]);
+    blob(ctx, cx + lean - W * 0.18, top - H * 0.16, W * 0.72, H * 0.72, P[2]);
+    blob(ctx, cx + lean - W * 0.3, top - H * 0.3, W * 0.46, H * 0.46, P[1]);
+    // clustered leaf specks along the lit side
+    for (let i = 0; i < 6; i++) {
+      const a = rng.range(Math.PI * 0.8, Math.PI * 1.6);
+      blob(ctx, cx + lean + Math.cos(a) * W * 0.6, top + Math.sin(a) * H * 0.6,
+        1.7, 1.3, i < 3 ? P[0] : P[1]);
+    }
+    if (art.blossom) {
+      const B = G.C.PAL[art.blossom];
+      for (let i = 0; i < 9; i++) {
+        const a = rng.range(0, Math.PI * 2);
+        blob(ctx, cx + lean + Math.cos(a) * W * rng.range(0.2, 0.75),
+          top + Math.sin(a) * H * rng.range(0.2, 0.75), 1.6, 1.5, B[rng.int(0, 3)]);
+      }
+    }
   }
 }
 
@@ -96,8 +157,9 @@ function paintFlowers(ctx, v) {
 
 function getDecoSprite(s) {
   if (s.kind === 'tree') {
-    return R.sprite(`tree:${s.leaf}:${s.v}`, 48, 60, 24, 52,
-      (ctx) => paintTree(ctx, s.leaf, s.v));
+    const sp = s.sp ?? G.TreeArt.fromLeaf(s.leaf);
+    return R.sprite(`tree:${sp}:${s.v}`, 48, 72, 24, 64,
+      (ctx) => paintTree(ctx, sp, s.v));
   }
   if (s.kind === 'rock') {
     return R.sprite(`rock:${s.v}`, 28, 22, 14, 15, (ctx) => paintRock(ctx, s.v));
@@ -342,9 +404,15 @@ R.drawWorld = (ctx) => {
   drawZoneOverlay(ctx, rect);
   drawStructures(ctx, rect);
   G.Events?.drawWorld?.(ctx);
+  G.Weather?.drawShadows?.(ctx, rect);
 
   // ---- time-of-day grade (multiply over the whole scene; UI drawn later is unaffected)
-  const [gc, ga] = gradeAt(G.time.hour);
+  let [gc, ga] = gradeAt(G.time.hour);
+  const wDim = G.Weather?.dim?.() ?? 0;
+  if (wDim > 0) {
+    gc = G.C.mix(gc, '#69708e', Math.min(0.6, wDim * 2.2));
+    ga = Math.min(0.85, ga + wDim * (1 - ga));
+  }
   if (ga > 0.004) {
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.globalCompositeOperation = 'multiply';
@@ -414,16 +482,18 @@ R.drawWorld = (ctx) => {
       const nightA = G.M.clamp((0.6 - dl) * 3, 0, 1);
       for (const L of G.Traffic.lights.values()) {
         const [sx, sy] = ISO.toScreen(L.x + 0.42, L.y + 0.42);
-        if (sx < rect.x0 - 40 || sx > rect.x1 + 40 || sy < rect.y0 - 40 || sy > rect.y1 + 40) continue;
-        const cols = L.amber ? ['#ffcf6b', '#ffcf6b']
-          : [L.axis === 1 ? '#7ed47a' : '#e8655a', L.axis === 0 ? '#7ed47a' : '#e8655a'];
+        if (sx < rect.x0 - 40 || sx > rect.x1 + 40 || sy < rect.y0 - 60 || sy > rect.y1 + 40) continue;
+        const info = G.Traffic.lightLensInfo(L);
         ctx.globalAlpha = 0.5 * nightA + 0.25;
-        for (const [i, c] of cols.entries()) {
-          const g = ctx.createRadialGradient(sx, sy - 27 + i * 4, 0.5, sx, sy - 27 + i * 4, 5);
-          g.addColorStop(0, c);
-          g.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g;
-          ctx.fillRect(sx - 5, sy - 32 + i * 4, 10, 10);
+        for (const h of info.heads) {
+          for (const lens of h.lenses) {
+            if (!lens.lit) continue;
+            const g = ctx.createRadialGradient(h.x, lens.y, 0.5, h.x, lens.y, 5.5);
+            g.addColorStop(0, lens.c);
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(h.x - 5.5, lens.y - 5.5, 11, 11);
+          }
         }
       }
       // headlights
@@ -453,6 +523,12 @@ R.drawWorld = (ctx) => {
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // rain streaks ride above the world, below the HUD
+  if (G.Weather) {
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    G.Weather.drawRain(ctx);
   }
 
   // overlays drawn after drawWorld (cursor, ghosts, floats) expect world space
@@ -500,7 +576,8 @@ function drawZoneOverlay(ctx, rect) {
   if (!grid.zones) return;
   const active = G.Build?.tool?.mode === 'zone';
   const alpha = active ? 0.3 : 0.13;
-  const cols = ['', G.C.withAlpha('#9ed47a', alpha), G.C.withAlpha('#88a4c4', alpha)];
+  const cols = ['', G.C.withAlpha('#9ed47a', alpha), G.C.withAlpha('#88a4c4', alpha),
+    G.C.withAlpha('#d9b153', alpha)];
   for (let i = 0; i < n * n; i++) {
     const z = grid.zones[i];
     if (!z || grid.occ[i] !== 0) continue;

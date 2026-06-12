@@ -89,10 +89,12 @@ Demo.grow = () => {
       }
     }
   };
-  // residential ribbons along the outer lanes, commercial spine in the middle
+  // residential ribbons outside, commercial spine above the middle lane,
+  // farmland below it
   zone(cx - 9, cy - 7, cx + 9, cy - 4, 1);
   zone(cx - 9, cy + 4, cx + 9, cy + 7, 1);
-  zone(cx - 9, cy - 2, cx + 9, cy + 2, 2);
+  zone(cx - 9, cy - 2, cx + 9, cy - 1, 2);
+  zone(cx - 9, cy + 1, cx + 9, cy + 2, 3);
   put('well', cx + 1, cy + 3);
   put('green', cx - 3, cy + 1) || put('green', cx - 7, cy + 1);
   G.Growth.landValuePass();
@@ -124,10 +126,10 @@ Demo.autoplay = (maxMinutes, opts = {}) => {
   };
   const zoneBlocks = () => {
     let block = 0;
+    const cycle = [1, 1, 2, 1, 3]; // res-heavy mix with shops and farmland
     for (let by = -radius; by < radius; by += SPACING) {
       for (let bx = -radius; bx < radius; bx += SPACING) {
-        block++;
-        const z = (block % 3 === 0) ? 2 : 1;
+        const z = cycle[block++ % cycle.length];
         G.Build.commitZoneRect(G.Build.rectTiles(C + bx + 1, C + by + 1,
           C + bx + SPACING - 1, C + by + SPACING - 1), z);
       }
@@ -137,7 +139,8 @@ Demo.autoplay = (maxMinutes, opts = {}) => {
     let n = 0;
     const grid = G.grid, size = grid.size;
     for (let i = 0; i < grid.zones.length; i++) {
-      if (grid.zones[i] !== z || grid.occ[i] !== 0 || grid.roads[i]) continue;
+      if (grid.occ[i] !== 0 || grid.roads[i]) continue;
+      if (z === 2 ? grid.zones[i] < 2 : grid.zones[i] !== z) continue; // com counts farm too
       if (G.Roads.touchesFootprint(i % size, (i / size) | 0, 1, 1)) n++;
     }
     return n;

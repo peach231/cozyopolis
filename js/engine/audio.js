@@ -132,7 +132,7 @@ function scheduleMusic() {
 }
 
 // ------------------------------------------------------------- ambience
-let chirpT = 0, cricketT = 0;
+let chirpT = 0, cricketT = 0, rainT = 0;
 function ambience(dt) {
   const dl = G.time.daylight();
   chirpT -= dt;
@@ -149,6 +149,11 @@ function ambience(dt) {
     cricketT = 0.4 + mrng() * 1.2;
     const t = now() + 0.02;
     for (let i = 0; i < 3; i++) noise(t + i * 0.07, 0.03, 0.008, 4200, ambG);
+  }
+  rainT -= dt;
+  if (G.Weather?.kind === 'rain' && rainT <= 0) {
+    rainT = 0.22;
+    noise(now() + 0.02, 0.3, 0.018, 0, ambG); // soft lowpassed patter bed
   }
 }
 

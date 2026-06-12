@@ -134,7 +134,8 @@ let spawnT = 0;
 A.targetCount = () => {
   const homes = buildingsWithEntry().filter(([s]) => G.Buildings.byId[s.type]?.housing).length;
   const dayScale = 0.15 + 0.85 * G.time.daylight();
-  return Math.min(MAX_WALKERS, Math.round(homes * 2.2 * dayScale));
+  const weather = G.Weather?.crowdScale?.() ?? 1;
+  return Math.min(MAX_WALKERS, Math.round(homes * 2.2 * dayScale * weather));
 };
 
 A.tick = (dt) => {
@@ -178,9 +179,11 @@ A.tick = (dt) => {
     const done = w.pi >= w.path.length - 1;
     const a = w.path[Math.min(w.pi, w.path.length - 1)];
     const b = w.path[Math.min(w.pi + 1, w.path.length - 1)];
-    // lateral offset: keep right + personal jitter
+    // lateral offset: pedestrians keep to the sidewalk edge on real roads
+    // (vehicles use lane offset 0.2), and the middle of narrow dirt paths
     const dx = b[0] - a[0], dy = b[1] - a[1];
-    const off = 0.16 + w.jitter;
+    const tier = G.Roads.at(a[0], a[1]);
+    const off = (tier >= 2 ? 0.34 : 0.14) + w.jitter * 0.6;
     w.x = a[0] + dx * w.prog + dy * off;
     w.y = a[1] + dy * w.prog - dx * off;
     w.tx = b[0]; w.ty = b[1];

@@ -111,15 +111,33 @@ UI.draw = (ctx) => {
   ctx.moveTo(fx - 3.2, fy + 2.6);
   ctx.quadraticCurveTo(fx, fy + 2.6 + bend, fx + 3.2, fy + 2.6);
   ctx.stroke();
-  // RCI demand bars
+  // zone demand bars (R = homes wanted, C = shops/jobs wanted)
   const dem = G.Growth?.demand ?? { res: 0, com: 0 };
-  for (const [i, [v, col]] of [[dem.res, pal.uiGood], [dem.com, '#88a4c4']].entries()) {
-    const bx = 12 + PW - 38 + i * 12;
+  for (const [i, [v, col, label]] of
+      [[dem.res, pal.uiGood, 'R'], [dem.com, '#88a4c4', 'C']].entries()) {
+    const bx = 12 + PW - 40 + i * 13;
     ctx.fillStyle = G.C.withAlpha(pal.uiPanelLight, 0.6);
-    ctx.fillRect(bx, 46, 7, 22);
+    ctx.fillRect(bx, 44, 8, 20);
     ctx.fillStyle = col;
-    const hgt = Math.max(2, v * 22);
-    ctx.fillRect(bx, 46 + 22 - hgt, 7, hgt);
+    const hgt = Math.max(2, v * 20);
+    ctx.fillRect(bx, 44 + 20 - hgt, 8, hgt);
+    ctx.font = `700 9px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = pal.uiTextDim;
+    ctx.fillText(label, bx + 4, 70);
+    ctx.textAlign = 'left';
+  }
+  UI.buttons.push({ id: 'tip:demand', x: 12 + PW - 42, y: 42, w: 28, h: 32 });
+  UI.buttons.push({ id: 'tip:happy', x: fx - 10, y: fy - 10, w: 20, h: 20 });
+  if (UI.hoverId === 'tip:demand' || UI.hoverId === 'tip:happy') {
+    const msg = UI.hoverId === 'tip:demand'
+      ? 'Zone demand — R: homes wanted · C: shops & jobs wanted'
+      : `Citizen happiness: ${Math.round((G.city.happiness ?? 0.6) * 100)}% (parks, jobs and pretty streets help)`;
+    ctx.font = `600 12px ${FONT}`;
+    const w = ctx.measureText(msg).width + 20;
+    panel(ctx, 12, 122, w, 26, 8);
+    ctx.fillStyle = pal.uiText;
+    ctx.fillText(msg, 22, 135);
   }
   // live street counts
   ctx.font = `600 12px ${FONT}`;
@@ -224,7 +242,7 @@ UI.draw = (ctx) => {
     ctx.fillStyle = pal.uiTextDim;
     ctx.font = `600 12px ${FONT}`;
     ctx.textAlign = 'left';
-    ctx.fillText(`fps ${G.debug.fps | 0}  seed ${G.grid.seed}  zoom ${G.cam.zoom.toFixed(2)}`, 14, view.h - 14);
+    ctx.fillText(`fps ${G.debug.fps | 0}  seed ${G.grid.seed}  zoom ${G.cam.zoom.toFixed(2)}  wx ${G.Weather?.kind}`, 14, view.h - 14);
   }
 };
 
@@ -255,19 +273,22 @@ function catItems() {
       }));
     case 'zones':
       return [
-        { id: 'tool:zone:1', name: 'Residential Zone', cost: 1, zone: 1, era: 'hamlet' },
-        { id: 'tool:zone:2', name: 'Commercial Zone', cost: 1, zone: 2, era: 'hamlet' },
+        { id: 'tool:zone:1', name: 'Residential Zone — homes grow here', cost: 1, zone: 1, era: 'hamlet' },
+        { id: 'tool:zone:2', name: 'Commercial Zone — shops & offices grow here', cost: 1, zone: 2, era: 'hamlet' },
+        { id: 'tool:zone:3', name: 'Farmland — fields grow here', cost: 1, zone: 3, era: 'hamlet' },
       ];
     case 'parks':
       return [
         { id: 'tool:tree', name: 'Plant Tree', cost: 10, tree: true, era: 'hamlet' },
-        bld('green'), bld('plaza'), bld('fountain'),
+        bld('green'), bld('pond'), bld('playground'), bld('plaza'),
+        bld('fountain'), bld('botanic'), bld('promenade'),
       ];
     case 'civic':
-      return [bld('well'), bld('farmhouse'), bld('barn'), bld('chapel'), bld('school')];
+      return [bld('well'), bld('farmhouse'), bld('barn'), bld('chapel'),
+        bld('school'), bld('library'), bld('hospital'), bld('university')];
     case 'landmarks':
-      return [bld('town_hall'), bld('clock_tower'), bld('museum'),
-        bld('stadium'), bld('cathedral'), bld('spire')];
+      return [bld('town_hall'), bld('clock_tower'), bld('museum'), bld('ferris_wheel'),
+        bld('stadium'), bld('cathedral'), bld('opera'), bld('spire')];
   }
   return [];
 }
@@ -332,14 +353,14 @@ function drawPalette(ctx) {
         c.closePath(); c.fill();
         c.strokeStyle = surf[it.road === 4 ? 0 : 4]; c.lineWidth = 1.2; c.stroke();
       } else if (it.zone) {
-        c.fillStyle = G.C.withAlpha(it.zone === 1 ? '#9ed47a' : '#88a4c4', 0.7);
+        c.fillStyle = G.C.withAlpha(['', '#9ed47a', '#88a4c4', '#d9b153'][it.zone], 0.7);
         c.beginPath();
         c.moveTo(0, -9); c.lineTo(16, 0); c.lineTo(0, 9); c.lineTo(-16, 0);
         c.closePath(); c.fill();
         c.fillStyle = '#3a3147';
         c.font = `700 12px ${FONT}`;
         c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.fillText(it.zone === 1 ? 'R' : 'C', 0, 0);
+        c.fillText(['', 'R', 'C', 'F'][it.zone], 0, 0);
       } else if (it.tree) {
         c.fillStyle = G.C.PAL.woodDark[2];
         c.fillRect(-1.5, 2, 3, 7);
@@ -456,6 +477,7 @@ function rebuildMinimap() {
       else if (t === T.SAND) put(i, '#e3c98f');
       else if (grid.zones[gi] === 1) put(i, '#86b06b');
       else if (grid.zones[gi] === 2) put(i, '#7e98a8');
+      else if (grid.zones[gi] === 3) put(i, '#c2a86b');
       else put(i, t === T.MEADOW ? '#97bd68' : '#86b061');
     }
   }
@@ -504,7 +526,7 @@ function drawInspector(ctx) {
     sub = 'Villager';
     status = G.Agents.statusOf(sel.ref);
   } else if (sel.kind === 'car') {
-    title = `${sel.ref.owner}'s car`;
+    title = `${sel.ref.owner}'s ${sel.ref.veh === 'cart' ? 'cart' : 'car'}`;
     sub = 'On the road';
     status = G.Traffic.statusOf(sel.ref);
   } else {
