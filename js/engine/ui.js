@@ -174,9 +174,9 @@ UI.draw = (ctx) => {
   ctx.font = `600 12px ${FONT}`;
   ctx.fillText(`Day ${G.time.day}`, cx0 + 104, 34);
 
-  // ---- bottom-right: speed + zoom controls
+  // ---- bottom-right: speed + zoom + fullscreen controls
   const bw = 38, gap = 6;
-  const totalW = bw * 6 + gap * 5 + 14;
+  const totalW = bw * 7 + gap * 6 + 14;
   let bx = view.w - totalW - 12, by = view.h - 12 - 46;
   panel(ctx, bx - 8, by - 8, totalW + 8, 54, 12);
 
@@ -207,6 +207,17 @@ UI.draw = (ctx) => {
     c.beginPath(); c.moveTo(-6, 0); c.lineTo(6, 0);
     c.moveTo(0, -6); c.lineTo(0, 6); c.stroke();
   });
+  button(ctx, 'fullscreen', zx + (bw + gap) * 2, by, bw, 38,
+    typeof document !== 'undefined' && !!document.fullscreenElement, (c, col) => {
+      c.strokeStyle = col; c.lineWidth = 2;
+      for (const [mx, my] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        c.beginPath();
+        c.moveTo(mx * 7, my * 2.5);
+        c.lineTo(mx * 7, my * 7);
+        c.lineTo(mx * 2.5, my * 7);
+        c.stroke();
+      }
+    });
 
   // ---- top-center: news ticker
   drawTicker(ctx);
@@ -576,6 +587,10 @@ UI.onClick = (id, vx, vy) => {
   else if (id?.startsWith('speed')) { G.time.paused = false; G.time.speed = +id.slice(5); }
   else if (id === 'zoomIn') G.cam.zoomStep(1);
   else if (id === 'zoomOut') G.cam.zoomStep(-1);
+  else if (id === 'fullscreen') {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(() => UI.toast('Fullscreen blocked'));
+  }
   else if (id?.startsWith('cat:')) UI.cat = id.slice(4);
   else if (id?.startsWith('tool:')) {
     if (selectedToolId() === id) { G.Build.cancel(); return; }

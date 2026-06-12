@@ -376,6 +376,7 @@ function boot() {
     else if (e.key === '+' || e.key === '=') G.cam.zoomStep(1);
     else if (e.key === '-') G.cam.zoomStep(-1);
     else if (e.key === 'm' || e.key === 'M') G.Audio?.toggleMute?.();
+    else if (e.key === 'f' || e.key === 'F') G.UI.onClick('fullscreen');
     else if (e.key === 'Escape') { G.Build.cancel(); G.UI.selected = null; }
   });
   window.addEventListener('keyup', (e) => input.keys.delete(e.key.toLowerCase()));
